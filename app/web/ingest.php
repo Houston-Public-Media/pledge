@@ -75,7 +75,7 @@ if ( !empty( $_FILES ) ) {
 				$trans['last_name'] = $data[14];
 				$trans['email'] = $data[15];
 				$trans['source'] = $data[16];
-				$amount = (float)str_replace( '$', '', $data[5] );
+				$amount = (float)str_replace( [ '$', ',' ], [ '', '' ], $data[5] );
 				$trans['amount'] = round( $amount, 2 );
 				if ( $data[7] === 'Monthly' ) {
 					$trans['frequency'] = 1;
