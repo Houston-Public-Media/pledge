@@ -1,19 +1,20 @@
 name: pledge
 type: php
-docroot: "app/web"
+docroot: app/web
 php_version: "8.4"
 webserver_type: apache-fpm
 xdebug_enabled: true
-timezone: "America/Chicago"
 additional_hostnames: []
 additional_fqdns: []
 database:
-  type: mariadb
-  version: "11.8"
+    type: mariadb
+    version: "11.8"
 use_dns_when_possible: true
+timezone: America/Chicago
 composer_version: "2"
 web_environment: []
 corepack_enable: false
+disable_upload_dirs_warning: true
 
 # Key features of DDEV's config.yaml:
 

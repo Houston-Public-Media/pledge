@@ -3,7 +3,17 @@ require_once( '../global.php' );
 global $logged_in, $db;
 if ( !$logged_in ) {
 	header( "HTTP/1.1 403 Unauthorized" );
-	header( 'Location: /' );
+	header( 'Location: https://pledge.hpm.io/' );
+	die;
+}
+if ( !empty( $_POST ) ) {
+	if ( !empty( $_POST['nonce'] ) ) {
+		if ( $_POST['nonce'] !== $_SESSION['nonce'] ) {
+			header( "HTTP/1.1 500 Server Error" );
+			echo "ERROR: Something doesn't smell right. Refresh the page and try again.";
+			die;
+		}
+	}
 }
 $formats = [ 'csv' ];
 if ( !empty( $_FILES ) ) {
@@ -17,10 +27,11 @@ if ( !empty( $_FILES ) ) {
 	}
 	$sb_skip = [
 		"explore the best of pbs with houston pbs passport!: (hpmf main passport donation form)",
-		"thank you!: (hpmf member esol donation form)",
 		"thank you: (hpmf passport add gift email donation form)",
 		"renew your membership: (hpmf r2 renewal donation form)",
-		"renew your membership: (hpmf lapsed renewal donation form)"
+		"renew your membership: (hpmf lapsed renewal donation form)",
+		"because you make a difference!: (hpmf main renewal donation form)",
+		"give the gift of a houston public media membership!: (hpmf gift membership donation form)"
 	];
 	$path = pathinfo( $filename );
 	if ( !empty( $path['extension'] ) ) {

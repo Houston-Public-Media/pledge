@@ -643,6 +643,35 @@ header {
 		}
 	}
 }
+#danger-zone {
+	padding: 1rem;
+	background-color: rgba(255,255,255,0.25);
+	border: 2px dotted var(--main-red);
+	h4, p {
+		color: white;
+	}
+	#buttons {
+		display: grid;
+		grid-template-columns: repeat(6, 1fr);
+		gap: 1rem;
+		padding-block: 1rem;
+		> div {
+			grid-column-end: span 2;
+			&:nth-child(4),
+			&:nth-child(5) {
+				grid-column-end: span 3;
+			}
+		}
+		button {
+			outline: none;
+			border-radius: 0.5rem;
+			background-color: var(--main-red);
+			color: white;
+			font-weight: bolder;
+			padding: 0.5rem 1rem;
+		}
+	}
+}
 @keyframes pulse {
 	0% {
 		opacity: 0;

@@ -3,6 +3,7 @@ require_once( '../global.php' );
 global $logged_in, $db;
 if ( !$logged_in ) {
 	header( "HTTP/1.1 403 Unauthorized" );
+	header( 'Location: https://pledge.hpm.io/' );
 	die;
 }
 $data = json_decode( file_get_contents( 'php://input' ), true );
@@ -21,7 +22,7 @@ if ( !is_int( $data['lastTransId'] ) || !is_int( $data['lastTransDate'] ) || !is
 	die;
 }
 
-$result = $db->query( "SELECT EXISTS(SELECT 1 FROM transactions WHERE date < " . $data['end'] . " AND date > " . $data['lastTransDate'] . " AND id != " . $data['lastTransId'] . " ORDER BY date ASC);" );
+$result = $db->query( "SELECT EXISTS(SELECT 1 FROM transactions WHERE date BETWEEN " . $data['lastTransDate'] . " AND " . $data['end'] . " AND id != " . $data['lastTransId'] . " ORDER BY date ASC);" );
 header( 'Content-type: application/json' );
 $output = [
 	'refreshPage' => 'false'

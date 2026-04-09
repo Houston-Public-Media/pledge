@@ -14,7 +14,7 @@ if ( !empty( $_GET['end'] ) && preg_match( '/[0-9\-T:]+/', $_GET['end'] ) ) {
 	$end = strtotime( $end_get );
 }
 
-$result = $db->query( "SELECT * FROM transactions WHERE date < " . $end . " AND date > " . $start . " ORDER BY date ASC" );
+$result = $db->query( "SELECT * FROM transactions WHERE date BETWEEN " . $start . " AND " . $end . " ORDER BY date ASC" );
 $daily = $dow = $hourly = $transactions = [];
 $overall = $overall_extra = 0.00;
 $day_of_week = [ 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday' ];
@@ -147,7 +147,7 @@ if ( !empty( $transactions ) ) {
 				<div>
 					<a href="/?start=<?php echo $start_get; ?>&end=<?php echo $end_get; ?>" id="refreshPage" class="hidden"><span class="dot"></span> <span>New Data Available</span></a>
 				</div>
-				<a href="upload.php" class="upload-link">Upload Files</a>
+				<a href="manage.php" class="upload-link">Manage</a>
 			</header>
 			<form id="date-filters">
 				<div>
@@ -161,7 +161,7 @@ if ( !empty( $transactions ) ) {
 				<div>
 					<input type="submit" value="Submit" />
 				</div>
-				<p class="overall-total">Report Total: $<?php echo number_format( $overall, 2 ); ?> ($<?php echo number_format( $overall_extra, 2 ); ?> projected)</p>
+				<p class="overall-total">Report Total: $<?php echo number_format( $overall_extra, 2 ); ?></p>
 			</form>
 			<div id="tabs">
 				<div id="daily" class="active">Daily</div>
@@ -176,18 +176,15 @@ if ( !empty( $transactions ) ) {
 					$daytime = date( 'F j, Y', $day );
 					$day_id = date( 'Y-m-d', $day );
 					$total = $v['sb'] + $v['cww'];
-					$money = '$' . number_format( $v['total'], 2 );
-					$money_plus = '$' . number_format( $v['total_extra'], 2 );
-					//$open = ( $c === 0 ? ' open' : '' );
-					$open = '';
+					$money = '$' . number_format( $v['total_extra'], 2 );
 					$c++;
 					echo <<<EOT
-				<details class="transaction-details" id="d{$day_id}"{$open}>
+				<details class="transaction-details" id="d{$day_id}">
 					<summary>
 						<div class="transaction-summary">
 							<div>{$daytime}</div>
 							<div>Transactions: <strong>{$total}</strong> ({$v['cww']} CWW, {$v['sb']} Springboard)</div>
-							<div>Total: <strong>{$money}</strong> ({$money_plus} projected)</div>
+							<div>Total: <strong>{$money}</strong></div>
 						</div>
 					</summary>
 					<div class="summary-wrap">
@@ -213,18 +210,15 @@ EOT;
 					$daytime = $day_of_week[ $day ];
 					$day_id = $day;
 					$total = $v['sb'] + $v['cww'];
-					$money = '$' . number_format( $v['total'], 2 );
-					$money_plus = '$' . number_format( $v['total_extra'], 2 );
-					//$open = ( $c === 0 ? ' open' : '' );
-					$open = '';
+					$money = '$' . number_format( $v['total_extra'], 2 );
 					$c++;
 					echo <<<EOT
-				<details class="transaction-details" id="dow{$day_id}"{$open}>
+				<details class="transaction-details" id="dow{$day_id}">
 					<summary>
 						<div class="transaction-summary">
 							<div>{$daytime}</div>
 							<div>Transactions: <strong>{$total}</strong> ({$v['cww']} CWW, {$v['sb']} Springboard)</div>
-							<div>Total: <strong>{$money}</strong> ({$money_plus} projected)</div>
+							<div>Total: <strong>{$money}</strong></div>
 						</div>
 					</summary>
 					<div class="summary-wrap">

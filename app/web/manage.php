@@ -1,9 +1,11 @@
 <?php
 require_once( '../global.php' );
 global $logged_in, $db;
+$_SESSION['nonce'] = hash('sha256', NONCE_TEXT . microtime() );
 if ( !$logged_in ) {
 	header( "HTTP/1.1 403 Unauthorized" );
-	header( 'Location: /' );
+	header( 'Location: https://pledge.hpm.io/' );
+	die;
 } ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -36,7 +38,7 @@ if ( !$logged_in ) {
 	<body>
 		<div class="container">
 			<header>
-				<h1>Pledge Transaction Uploader</h1>
+				<h1>Pledge Transaction Management</h1>
 				<div></div>
 				<a href="/" class="upload-link">Return to Dashboard</a>
 			</header>
@@ -51,6 +53,31 @@ if ( !$logged_in ) {
 					<ul>
 						<li>CSV: .csv</li>
 					</ul>
+					<div id="danger-zone">
+						<h4>Danger Zone</h4>
+						<p>Use with caution. This section allows you to delete uploaded transactions.</p>
+						<div id="buttons">
+							<div>
+								<button type="button" onclick="sendDelete('cww')">Delete CWW</button>
+							</div>
+							<div>
+								<button type="button" onclick="sendDelete('sb')">Delete Springboard</button>
+							</div>
+							<div>
+								<button type="button" onclick="sendDelete('all')">The Nuclear Option</button>
+							</div>
+							<div>
+								<label for="delete-id" class="screen-reader-text">Delete By ID</label>
+								<input type="number" id="delete-id" name="delete-id" />
+								<button type="button" onclick="sendDelete('id')">Delete By ID</button>
+							</div>
+							<div>
+								<label for="delete-date" class="screen-reader-text">Delete By Date</label>
+								<input type="date" id="delete-date" name="delete-date" />
+								<button type="button" onclick="sendDelete('date')">Delete By Day</button>
+							</div>
+						</div>
+					</div>
 				</div>
 				<div>
 					<h4>Results</h4>
@@ -60,7 +87,32 @@ if ( !$logged_in ) {
 		</div>
 		<script src="https://app.hpm.io/js/dropzone/dropzone.min.js"></script>
 		<script>
-			let output = document.querySelector("#output");
+			const output = document.querySelector("#output");
+			const sendDelete = (type) => {
+				let extra = '';
+				if ( type === 'id' ) {
+					extra = document.querySelector('#delete-id').value;
+				} else if ( type === 'date' ) {
+					 extra = document.querySelector('#delete-date').value;
+				}
+				if (window.confirm('Are you sure you want to do this? Like, for real?')) {
+					fetch('delete.php', {
+						method: 'POST',
+						body: JSON.stringify({
+							type: type,
+							nonce: '<?php echo $_SESSION['nonce']; ?>',
+							extra: extra
+						})
+					})
+					.then(response => response.json())
+					.then(data => {
+						output.innerHTML += '<p>'+data.result+'</p>';
+						console.log(data.result);
+					});
+				} else {
+					return false;
+				}
+			};
 			Dropzone.options.comp = {
 				paramName: "comp",
 				acceptedFiles: ".xlsx,.csv",
@@ -68,6 +120,7 @@ if ( !$logged_in ) {
 				init: function() {
 					this.on("sending", function(file, xhr, formData) {
 						formData.append( "type", file.type );
+						formData.append( "nonce", '<?php echo $_SESSION['nonce']; ?>' );
 					});
 					this.on("error", function(file, errorMessage) {
 						alert( errorMessage );

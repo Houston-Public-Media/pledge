@@ -31,8 +31,7 @@ function hour_output( $hv, $hour, $transactions, $day_id = '' ): string {
 		$hour_id = 'dh' . $day_id . '-' . $hour;
 	}
 	$hour_total = $hv['cww'] + $hv['sb'];
-	$hour_money = '$' . number_format( $hv['total'], 2 );
-	$hour_money_plus = '$' . number_format( $hv['total_extra'], 2 );
+	$hour_money = '$' . number_format( $hv['total_extra'], 2 );
 	$hour_display = $hour . "AM";
 	if ( $hour == 0 ) {
 		$hour_display = "12AM";
@@ -47,7 +46,7 @@ function hour_output( $hv, $hour, $transactions, $day_id = '' ): string {
 						<div class="transaction-summary">
 							<div>{$hour_display}</div>
 							<div>Transactions: <strong>{$hour_total}</strong> ({$hv['cww']} CWW, {$hv['sb']} Springboard)</div>
-							<div>Total: <strong>{$hour_money}</strong> ({$hour_money_plus} projected)</div>
+							<div>Total: <strong>{$hour_money}</strong></div>
 						</div>
 					</summary>
 					<div class="summary-wrap inner">
@@ -67,7 +66,7 @@ EOT;
 		if ( !empty( $ct['email'] ) ) {
 			$name = '<a href="mailto:' . $ct['email'] . '" title="Email ' . $name . '">' . $name . '</a>';
 		}
-		$donation = '$' . number_format( $ct['amount'], 2 );
+		$donation = '$' . number_format( $ct['amount_full'], 2 );
 		$frequency = 'One-Time';
 		if ( $ct['frequency'] == 1 ) {
 			$frequency = 'Monthly';
