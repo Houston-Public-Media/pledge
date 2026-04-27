@@ -25,14 +25,11 @@ if ( !empty( $_FILES ) ) {
 		echo "ERROR: No file information passed, please try again.";
 		die;
 	}
-	$sb_skip = [
-		"explore the best of pbs with houston pbs passport!: (hpmf main passport donation form)",
-		"thank you: (hpmf passport add gift email donation form)",
-		"renew your membership: (hpmf r2 renewal donation form)",
-		"renew your membership: (hpmf lapsed renewal donation form)",
-		"because you make a difference!: (hpmf main renewal donation form)",
-		"give the gift of a houston public media membership!: (hpmf gift membership donation form)"
-	];
+	$sb_skip = [];
+	$result = $db->query( "SELECT * FROM exclusions WHERE mode = '" . $_SESSION['user']['mode'] . "'" );
+	while ( $row = $result->fetchArray( SQLITE3_ASSOC ) ) {
+		$sb_skip[] = $row['form'];
+	}
 	$path = pathinfo( $filename );
 	if ( !empty( $path['extension'] ) ) {
 		if ( !in_array( strtolower( $path['extension'] ), $formats ) ) {
@@ -67,7 +64,7 @@ if ( !empty( $_FILES ) ) {
 				'frequency' => 0
 			];
 			if ( $service === 'sb' ) {
-				if ( in_array( strtolower( trim( $data[16] ) ), $sb_skip ) ) {
+				if ( in_array( trim( $data[16] ), $sb_skip ) ) {
 					continue;
 				}
 				$trans['id'] = $data[1];
@@ -108,7 +105,7 @@ if ( !empty( $_FILES ) ) {
 			}
 			$result = $db->query( "SELECT EXISTS(SELECT 1 FROM transactions WHERE id = " . $trans['id'] . ");" );
 			if ( $result->fetchArray()[0] === 0 ) {
-				$query = "INSERT INTO transactions(id, date, first_name, last_name, email, amount, service, source, frequency, amount_full) VALUES(:id, :date, :first_name, :last_name, :email, :amount, :service, :source, :frequency, :amount_full)";
+				$query = "INSERT INTO transactions(id, date, first_name, last_name, email, amount, service, source, frequency, amount_full, ingest_mode) VALUES(:id, :date, :first_name, :last_name, :email, :amount, :service, :source, :frequency, :amount_full, :ingest_mode)";
 				$stmt = $db->prepare( $query );
 				$stmt->bindValue( ':id', $trans['id'], SQLITE3_INTEGER );
 				$stmt->bindValue( ':date', $trans['date'], SQLITE3_INTEGER );
@@ -120,6 +117,7 @@ if ( !empty( $_FILES ) ) {
 				$stmt->bindValue( ':source', $trans['source'] );
 				$stmt->bindValue( ':frequency', $trans['frequency'], SQLITE3_INTEGER );
 				$stmt->bindValue( ':amount_full', $trans['amount_full'], SQLITE3_FLOAT );
+				$stmt->bindValue( ':ingest_mode', $_SESSION['user']['mode'] );
 				$result = $stmt->execute();
 				$uniques++;
 			}

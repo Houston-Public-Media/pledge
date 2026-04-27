@@ -6,7 +6,17 @@ if ( !$logged_in ) {
 	header( "HTTP/1.1 403 Unauthorized" );
 	header( 'Location: https://pledge.hpm.io/' );
 	die;
-} ?>
+}
+$pledge_exclude = $nonpledge_exclude = [];
+$result = $db->query( "SELECT * FROM exclusions" );
+while ( $row = $result->fetchArray( SQLITE3_ASSOC ) ) {
+	if ( $row['mode'] === 'pledge' ) {
+		$pledge_exclude[] = $row['form'];
+	} else {
+		$nonpledge_exclude[] = $row['form'];
+	}
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 	<head>
@@ -42,46 +52,68 @@ if ( !$logged_in ) {
 				<div></div>
 				<a href="/" class="upload-link">Return to Dashboard</a>
 			</header>
-			<div id="inputforms">
-				<form action="ingest.php" class="dropzone" id="comp"></form>
-			</div>
-			<div class="instructions">
-				<div>
-					<h4>Uploading Instructions</h4>
-					<p>Please drag and drop your files into the area above, or click the area above for a file picker.  You can upload as many files as you like, but there is a 100MB limit per uploaded file.</p>
-					<h5>Accepted File Formats</h5>
-					<ul>
-						<li>CSV: .csv</li>
-					</ul>
-					<div id="danger-zone">
-						<h4>Danger Zone</h4>
-						<p>Use with caution. This section allows you to delete uploaded transactions.</p>
-						<div id="buttons">
-							<div>
-								<button type="button" onclick="sendDelete('cww')">Delete CWW</button>
-							</div>
-							<div>
-								<button type="button" onclick="sendDelete('sb')">Delete Springboard</button>
-							</div>
-							<div>
-								<button type="button" onclick="sendDelete('all')">The Nuclear Option</button>
-							</div>
-							<div>
-								<label for="delete-id" class="screen-reader-text">Delete By ID</label>
-								<input type="number" id="delete-id" name="delete-id" />
-								<button type="button" onclick="sendDelete('id')">Delete By ID</button>
-							</div>
-							<div>
-								<label for="delete-date" class="screen-reader-text">Delete By Date</label>
-								<input type="date" id="delete-date" name="delete-date" />
-								<button type="button" onclick="sendDelete('date')">Delete By Day</button>
-							</div>
+			<div id="instructions">
+				<div id="uploads">
+					<h4>Uploads</h4>
+					<div id="inputforms">
+						<form action="ingest.php" class="dropzone" id="comp"></form>
+					</div>
+					<div id="mode-select-container">
+						<label for="mode-select">Select Your Mode:</label>
+						<select id="mode-select" name="mode-select">
+							<option value="pledge"<?php echo ( $_SESSION['user']['mode'] === 'pledge' ? ' selected' : '' ); ?>>Pledge</option>
+							<option value="nonpledge"<?php echo ( $_SESSION['user']['mode'] === 'nonpledge' ? ' selected' : '' ); ?>>Non-Pledge</option>
+						</select>
+						<button type="button" onclick="saveMode()">Update Mode</button>
+					</div>
+					<h4>Instructions</h4>
+					<p>To upload, please drag and drop your files into the area above, or click for a file picker. You can upload as many files as you like, but there is a 100MB limit per uploaded file.</p>
+					<p>You can also select what mode you would like to use when uploading transactions (either "Pledge" or "Non-Pledge"). This will determine what forms are excluded when processing transactions. You can modify those exclusions below.</p>
+					<p>Accepted File Format: <strong>CSV (.csv)</strong></p>
+				</div>
+				<div id="danger-zone">
+					<h4>Deletions</h4>
+					<p>Use with caution. This section allows you to delete uploaded transactions.</p>
+					<div id="buttons">
+						<div>
+							<button type="button" onclick="sendDelete('cww')">Delete CWW</button>
+						</div>
+						<div>
+							<button type="button" onclick="sendDelete('sb')">Delete Springboard</button>
+						</div>
+						<div>
+							<button type="button" onclick="sendDelete('all')">The Nuclear Option</button>
+						</div>
+						<div>
+							<label for="delete-id" class="screen-reader-text">Delete By ID</label>
+							<input type="number" id="delete-id" name="delete-id" />
+							<button type="button" onclick="sendDelete('id')">Delete By ID</button>
+						</div>
+						<div>
+							<label for="delete-date" class="screen-reader-text">Delete By Date</label>
+							<input type="date" id="delete-date" name="delete-date" />
+							<button type="button" onclick="sendDelete('date')">Delete By Day</button>
 						</div>
 					</div>
 				</div>
 				<div>
 					<h4>Results</h4>
 					<div id="output"></div>
+				</div>
+			</div>
+			<div id="exclude-span">
+				<h4>Form Exclusions</h4>
+				<p>Enter all of the names of forms you want to exclude when processing transactions. Separate each form name with a new line.</p>
+				<div id="exclusions">
+					<div>
+						<h4><label for="pledge-exclusions">Pledge Exclusions</h4>
+						<textarea id="pledge-exclusions"><?php echo implode( "\n", $pledge_exclude ); ?></textarea>
+					</div>
+					<div>
+						<h4><label for="non-pledge-exclusions">Non-Pledge Exclusions</h4>
+						<textarea id="non-pledge-exclusions"><?php echo implode( "\n", $nonpledge_exclude ); ?></textarea>
+						<button type="button" onclick="saveExclude()">Update Exclusions</button>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -113,9 +145,41 @@ if ( !$logged_in ) {
 					return false;
 				}
 			};
+			const saveExclude = () => {
+				const pledge = document.querySelector('textarea#pledge-exclusions').value;
+				const nonPledge = document.querySelector('textarea#non-pledge-exclusions').value;
+				fetch('exclude.php', {
+					method: 'POST',
+					body: JSON.stringify({
+						nonce: '<?php echo $_SESSION['nonce']; ?>',
+						pledge: pledge,
+						nonPledge: nonPledge
+					})
+				})
+				.then(response => response.json())
+				.then(data => {
+					output.innerHTML += '<p>'+data.result+'</p>';
+					console.log(data.result);
+				});
+			};
+			const saveMode = () => {
+				const mode = document.querySelector('#mode-select').value;
+				fetch('mode.php', {
+					method: 'POST',
+					body: JSON.stringify({
+						mode: mode,
+						nonce: '<?php echo $_SESSION['nonce']; ?>'
+					})
+				})
+				.then(response => response.json())
+				.then(data => {
+					output.innerHTML += '<p>'+data.result+'</p>';
+					console.log(data.result);
+				});
+			};
 			Dropzone.options.comp = {
 				paramName: "comp",
-				acceptedFiles: ".xlsx,.csv",
+				acceptedFiles: ".csv",
 				maxFilesize: 100,
 				init: function() {
 					this.on("sending", function(file, xhr, formData) {

@@ -15,6 +15,11 @@ function check_login(): bool {
 			$user = $users->fetchArray( SQLITE3_ASSOC );
 			if ( password_verify( $_POST['pin'], $user['password'] ) ) {
 				$_SESSION['logged_in'] = true;
+				$_SESSION['user'] = [
+					'id' => $user['id'],
+					'username' => $user['username'],
+					'mode' => $user['mode']
+				];
 				$logged_in = true;
 			}
 		}

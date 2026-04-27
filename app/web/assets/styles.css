@@ -566,10 +566,12 @@ details {
 		background-color: var(--main-white);
 	}
 }
-.instructions {
+#instructions {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
+	grid-template-rows: 1fr 1fr;
 	gap: 4rem;
+	margin-block-start: 2rem;
 	> div {
 		padding: 1rem;
 		> * + * {
@@ -643,11 +645,11 @@ header {
 		}
 	}
 }
-#danger-zone {
+#danger-zone, #uploads {
 	padding: 1rem;
 	background-color: rgba(255,255,255,0.25);
 	border: 2px dotted var(--main-red);
-	h4, p {
+	h4, p, label {
 		color: white;
 	}
 	#buttons {
@@ -662,13 +664,46 @@ header {
 				grid-column-end: span 3;
 			}
 		}
-		button {
-			outline: none;
-			border-radius: 0.5rem;
-			background-color: var(--main-red);
-			color: white;
-			font-weight: bolder;
-			padding: 0.5rem 1rem;
+	}
+	#mode-select-container {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+		gap: 2rem;
+		align-content: center;
+		align-items: center;
+	}
+}
+#uploads {
+	grid-row-end: span 2;
+}
+button {
+	outline: none;
+	border-radius: 0.5rem;
+	background-color: var(--main-red);
+	color: white;
+	font-weight: bolder;
+	padding: 0.5rem 1rem;
+}
+#exclude-span {
+	padding: 1rem;
+	background-color: rgba(255,255,255,0.25);
+	border: 2px dotted var(--main-red);
+	margin-block-start: 4rem;
+	h4, p, li {
+		color: var(--main-white);
+	}
+	> * + * {
+		margin-block-start: 1rem;
+	}
+	#exclusions {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 4rem;
+		margin-block-start: 1rem;
+		textarea {
+			width: 100%;
+			height: 15rem;
+			margin-block-start: 1rem;
 		}
 	}
 }

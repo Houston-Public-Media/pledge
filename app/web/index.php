@@ -14,7 +14,7 @@ if ( !empty( $_GET['end'] ) && preg_match( '/[0-9\-T:]+/', $_GET['end'] ) ) {
 	$end = strtotime( $end_get );
 }
 
-$result = $db->query( "SELECT * FROM transactions WHERE date BETWEEN " . $start . " AND " . $end . " ORDER BY date ASC" );
+$result = $db->query( "SELECT * FROM transactions WHERE date BETWEEN " . $start . " AND " . $end . " AND ingest_mode = '" . $_SESSION['user']['mode'] . "' ORDER BY date ASC" );
 $daily = $dow = $hourly = $transactions = [];
 $overall = $overall_extra = 0.00;
 $day_of_week = [ 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday' ];
@@ -163,6 +163,7 @@ if ( !empty( $transactions ) ) {
 				</div>
 				<p class="overall-total">Report Total: $<?php echo number_format( $overall_extra, 2 ); ?></p>
 			</form>
+			<h3 style="color: white; text-align: right;">Current Mode: <strong><?php echo ucwords( $_SESSION['user']['mode'] ); ?></strong></h3>
 			<div id="tabs">
 				<div id="daily" class="active">Daily</div>
 				<div id="hourly">By Hour</div>
