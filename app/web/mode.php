@@ -30,10 +30,10 @@ if ( $data['nonce'] !== $_SESSION['nonce'] ) {
 
 $message = 'Mode remains "' . $data['mode'] . '"';
 if ( $_SESSION['user']['mode'] !== $data['mode'] ) {
-	$query = "UPDATE users SET mode = ':mode' WHERE id = :id";
+	$query = "UPDATE users SET mode = :ingest_mode WHERE id = :id";
 	$stmt = $db->prepare( $query );
 	$stmt->bindValue( ':id', $_SESSION['user']['id'], SQLITE3_INTEGER );
-	$stmt->bindValue( ':mode', $data['mode'] );
+	$stmt->bindValue( ':ingest_mode', $data['mode'] );
 	$result = $stmt->execute();
 	$_SESSION['user']['mode'] = $data['mode'];
 	if ( $result === false ) {

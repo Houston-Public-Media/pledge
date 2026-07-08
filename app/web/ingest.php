@@ -28,7 +28,7 @@ if ( !empty( $_FILES ) ) {
 	$sb_skip = [];
 	$result = $db->query( "SELECT * FROM exclusions WHERE mode = '" . $_SESSION['user']['mode'] . "'" );
 	while ( $row = $result->fetchArray( SQLITE3_ASSOC ) ) {
-		$sb_skip[] = $row['form'];
+		$sb_skip[] = preg_replace( '/[^a-zA-Z0-9]/', '', $row['form'] );
 	}
 	$path = pathinfo( $filename );
 	if ( !empty( $path['extension'] ) ) {
@@ -64,7 +64,7 @@ if ( !empty( $_FILES ) ) {
 				'frequency' => 0
 			];
 			if ( $service === 'sb' ) {
-				if ( in_array( trim( $data[16] ), $sb_skip ) ) {
+				if ( in_array( preg_replace( '/[^a-zA-Z0-9]/', '', $data[16] ), $sb_skip ) ) {
 					continue;
 				}
 				$trans['id'] = $data[1];

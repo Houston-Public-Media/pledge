@@ -1,116 +1,88 @@
 <?php
 require_once( '../global.php' );
 global $logged_in, $db;
-$end = time();
-$start = $end - ( 60 * 60 * 24 * 7 );
-$start_get = date( 'Y-m-d\TH:i', $start );
-$end_get = date( 'Y-m-d\TH:i', $end );
-if ( !empty( $_GET['start'] ) && preg_match( '/[0-9\-T:]+/', $_GET['start'] ) ) {
-	$start_get = $_GET['start'];
-	$start = strtotime( $start_get );
-}
-if ( !empty( $_GET['end'] ) && preg_match( '/[0-9\-T:]+/', $_GET['end'] ) ) {
-	$end_get = $_GET['end'];
-	$end = strtotime( $end_get );
-}
+if ( $logged_in ) {
+	$end = time();
+	$start = $end - ( 60 * 60 * 24 * 7 );
+	$start_get = date( 'Y-m-d\TH:i', $start );
+	$end_get = date( 'Y-m-d\TH:i', $end );
+	if ( !empty( $_GET['start'] ) && preg_match( '/[0-9\-T:]+/', $_GET['start'] ) ) {
+		$start_get = $_GET['start'];
+		$start = strtotime( $start_get );
+	}
+	if ( !empty( $_GET['end'] ) && preg_match( '/[0-9\-T:]+/', $_GET['end'] ) ) {
+		$end_get = $_GET['end'];
+		$end = strtotime( $end_get );
+	}
 
-$result = $db->query( "SELECT * FROM transactions WHERE date BETWEEN " . $start . " AND " . $end . " AND ingest_mode = '" . $_SESSION['user']['mode'] . "' ORDER BY date ASC" );
-$daily = $dow = $hourly = $transactions = [];
-$overall = $overall_extra = 0.00;
-$day_of_week = [ 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday' ];
-while ( $row = $result->fetchArray( SQLITE3_ASSOC ) ) {
-	$id = $row['id'];
-	unset( $row['id'] );
-	$transactions[ $id ] = $row;
-	$dt = getdate( $row['date'] );
-	$day = mktime( 0, 0, 0, $dt['mon'], $dt['mday'], $dt['year'] );
-	if ( empty( $daily[ $day ] ) ) {
-		$daily[ $day ] = [
-			'hours' => [],
-			'total' => 0.0,
-			'total_extra' => 0.0,
-			'cww' => 0,
-			'sb' => 0
-		];
+	$result = $db->query( "SELECT * FROM transactions WHERE date BETWEEN " . $start . " AND " . $end . " AND ingest_mode = '" . $_SESSION['user']['mode'] . "' ORDER BY date ASC" );
+	$daily = $dow = $hourly = $transactions = [];
+	$overall = $overall_extra = 0.00;
+	$day_of_week = [ 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday' ];
+	while ( $row = $result->fetchArray( SQLITE3_ASSOC ) ) {
+		$id = $row['id'];
+		unset( $row['id'] );
+		$transactions[ $id ] = $row;
+		$dt = getdate( $row['date'] );
+		$day = mktime( 0, 0, 0, $dt['mon'], $dt['mday'], $dt['year'] );
+		if ( empty( $daily[ $day ] ) ) {
+			$daily[ $day ] = [ 'hours' => [], 'total' => 0.0, 'total_extra' => 0.0, 'cww' => 0, 'sb' => 0 ];
+		}
+		if ( empty( $daily[ $day ]['hours'][ $dt['hours'] ] ) ) {
+			$daily[ $day ]['hours'][ $dt['hours'] ] = [ 'transactions' => [], 'total' => 0.0, 'total_extra' => 0.0, 'cww' => 0, 'sb' => 0 ];
+		}
+		if ( empty( $dow[ $dt['wday'] ] ) ) {
+			$dow[ $dt['wday'] ] = [ 'hours' => [], 'total' => 0.00, 'total_extra' => 0.00, 'cww' => 0, 'sb' => 0 ];
+		}
+		if ( empty( $dow[ $dt['wday'] ]['hours'][ $dt['hours'] ] ) ) {
+			$dow[ $dt['wday'] ]['hours'][ $dt['hours'] ] = [ 'transactions' => [], 'total' => 0.00, 'total_extra' => 0.00, 'cww' => 0, 'sb' => 0 ];
+		}
+		if ( empty( $hourly[ $dt['hours'] ] ) ) {
+			$hourly[ $dt['hours'] ] = [];
+		}
+		if ( empty( $hourly[ $dt['hours'] ] ) ) {
+			$hourly[ $dt['hours'] ] = [ 'transactions' => [], 'total' => 0.00, 'total_extra' => 0.00, 'cww' => 0, 'sb' => 0 ];
+		}
+		$daily[ $day ]['hours'][ $dt['hours'] ]['transactions'][] = $id;
+		$daily[ $day ]['hours'][ $dt['hours'] ]['total'] += $row['amount'];
+		$daily[ $day ]['hours'][ $dt['hours'] ]['total_extra'] += $row['amount_full'];
+		$daily[ $day ]['transactions'][] = $id;
+		$daily[ $day ]['total'] += $row['amount'];
+		$daily[ $day ]['total_extra'] += $row['amount_full'];
+		$dow[ $dt['wday'] ]['hours'][ $dt['hours'] ]['transactions'][] = $id;
+		$dow[ $dt['wday'] ]['hours'][ $dt['hours'] ]['total'] += $row['amount'];
+		$dow[ $dt['wday'] ]['hours'][ $dt['hours'] ]['total_extra'] += $row['amount_full'];
+		$dow[ $dt['wday'] ]['transactions'][] = $id;
+		$dow[ $dt['wday'] ]['total'] += $row['amount'];
+		$dow[ $dt['wday'] ]['total_extra'] += $row['amount_full'];
+		$hourly[ $dt['hours'] ]['transactions'][] = $id;
+		$hourly[ $dt['hours'] ]['total'] += $row['amount'];
+		$hourly[ $dt['hours'] ]['total_extra'] += $row['amount_full'];
+		if ( $row['service'] === 'cww' ) {
+			$daily[ $day ]['hours'][ $dt['hours'] ]['cww']++;
+			$daily[ $day ]['cww']++;
+			$dow[ $dt['wday'] ]['hours'][ $dt['hours'] ]['cww']++;
+			$dow[ $dt['wday'] ]['cww']++;
+			$hourly[ $dt['hours'] ]['cww']++;
+		} elseif ( $row['service'] === 'sb' ) {
+			$daily[ $day ]['hours'][ $dt['hours'] ]['sb']++;
+			$daily[ $day ]['sb']++;
+			$dow[ $dt['wday'] ]['hours'][ $dt['hours'] ]['sb']++;
+			$dow[ $dt['wday'] ]['sb']++;
+			$hourly[ $dt['hours'] ]['sb']++;
+		}
+		$overall += $row['amount'];
+		$overall_extra += $row['amount_full'];
 	}
-	if ( empty( $daily[ $day ]['hours'][ $dt['hours'] ] ) ) {
-		$daily[ $day ]['hours'][ $dt['hours'] ] = [
-			'transactions' => [],
-			'total' => 0.0,
-			'total_extra' => 0.0,
-			'cww' => 0,
-			'sb' => 0
-		];
+	$daily = array_reverse( $daily, true );
+	ksort( $hourly );
+	ksort( $dow );
+	$last_id = $last_date = 0;
+	if ( !empty( $transactions ) ) {
+		end( $transactions );
+		$last_id = key( $transactions );
+		$last_date = $transactions[ $last_id ]['date'];
 	}
-	if ( empty( $dow[ $dt['wday'] ] ) ) {
-		$dow[ $dt['wday'] ] = [
-			'hours' => [],
-			'total' => 0.00,
-			'total_extra' => 0.00,
-			'cww' => 0,
-			'sb' => 0
-		];
-	}
-	if ( empty( $dow[ $dt['wday'] ]['hours'][ $dt['hours'] ] ) ) {
-		$dow[ $dt['wday'] ]['hours'][ $dt['hours'] ] = [
-			'transactions' => [],
-			'total' => 0.00,
-			'total_extra' => 0.00,
-			'cww' => 0,
-			'sb' => 0
-		];
-	}
-	if ( empty( $hourly[ $dt['hours'] ] ) ) {
-		$hourly[ $dt['hours'] ] = [];
-	}
-	if ( empty( $hourly[ $dt['hours'] ] ) ) {
-		$hourly[ $dt['hours'] ] = [
-			'transactions' => [],
-			'total' => 0.00,
-			'total_extra' => 0.00,
-			'cww' => 0,
-			'sb' => 0
-		];
-	}
-	$daily[ $day ]['hours'][ $dt['hours'] ]['transactions'][] = $id;
-	$daily[ $day ]['hours'][ $dt['hours'] ]['total'] += $row['amount'];
-	$daily[ $day ]['hours'][ $dt['hours'] ]['total_extra'] += $row['amount_full'];
-	$daily[ $day ]['transactions'][] = $id;
-	$daily[ $day ]['total'] += $row['amount'];
-	$daily[ $day ]['total_extra'] += $row['amount_full'];
-	$dow[ $dt['wday'] ]['hours'][ $dt['hours'] ]['transactions'][] = $id;
-	$dow[ $dt['wday'] ]['hours'][ $dt['hours'] ]['total'] += $row['amount'];
-	$dow[ $dt['wday'] ]['hours'][ $dt['hours'] ]['total_extra'] += $row['amount_full'];
-	$dow[ $dt['wday'] ]['transactions'][] = $id;
-	$dow[ $dt['wday'] ]['total'] += $row['amount'];
-	$dow[ $dt['wday'] ]['total_extra'] += $row['amount_full'];
-	$hourly[ $dt['hours'] ]['transactions'][] = $id;
-	$hourly[ $dt['hours'] ]['total'] += $row['amount'];
-	$hourly[ $dt['hours'] ]['total_extra'] += $row['amount_full'];
-	if ( $row['service'] === 'cww' ) {
-		$daily[ $day ]['hours'][ $dt['hours'] ]['cww']++;
-		$daily[ $day ]['cww']++;
-		$dow[ $dt['wday'] ]['hours'][ $dt['hours'] ]['cww']++;
-		$dow[ $dt['wday'] ]['cww']++;
-		$hourly[ $dt['hours'] ]['cww']++;
-	} elseif ( $row['service'] === 'sb' ) {
-		$daily[ $day ]['hours'][ $dt['hours'] ]['sb']++;
-		$daily[ $day ]['sb']++;
-		$dow[ $dt['wday'] ]['hours'][ $dt['hours'] ]['sb']++;
-		$dow[ $dt['wday'] ]['sb']++;
-		$hourly[ $dt['hours'] ]['sb']++;
-	}
-	$overall += $row['amount'];
-	$overall_extra += $row['amount_full'];
-}
-$daily = array_reverse( $daily, true );
-ksort( $hourly );
-ksort( $dow );
-$last_id = $last_date = 0;
-if ( !empty( $transactions ) ) {
-	end( $transactions );
-	$last_id = key( $transactions );
-	$last_date = $transactions[ $last_id ]['date'];
 } ?>
 <!DOCTYPE html>
 <html lang="en">
